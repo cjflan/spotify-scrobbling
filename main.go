@@ -1,36 +1,45 @@
 package main
 
 import (
-  "fmt"
-  "strings"
-  "net/http"
+	"fmt"
+	"log"
+	"net/http"
+
+	spotifyauth "github.com/cjflan/spotify-scrobbling/auth"
+	"github.com/cjflan/spotify-scrobbling/spotify"
+)
+
+var (
+	auth  = spotifyauth.New(spotifyauth.WithScopes(spotifyauth.ScopeUserReadPrivate))
+	ch    = make(chan *spotify.Client)
+	state = "abc123"
 )
 
 func main() {
-		url := "https://accounts.spotify.com/api/token"
-		payload := strings.NewReader(`{
-				"grant_type": "client_credentials",
-				"client_id": "6d29d24f3b19439a93c732a2832e5341",
-				"client_secret": "e32ba7c0b58f448f9dc96859caae7fe2" 
-		}`)
-		
-		client := &http.Client{}
-		req, err := http.NewRequest("POST", url, payload)
-		
+	http.HandleFunc("/callback", Callback)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Got request for:", r.URL.String())
+	})
+	go func() {
+		err := http.ListenAndServe(":8080", nil)
 		if err != nil {
-				fmt.Println(err)
-				return
+			log.Fatal(err)
 		}
-
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		resp, err := client.Do(req)
-
-		if err != nil {
-				fmt.Println(err)
-				return
-		}
-		fmt.Println(resp)
-		return
+	}()
 }
 
+func Callback(w http.ResponseWriter, r *http.Request) {
+	tok, err := auth.Token(r.Context(), state, r)
+	if err != nil {
+		http.Error(w, "Couldn't get token", http.StatusForbidden)
+		log.Fatal(err)
+	}
+	if st := r.FormValue("state"); st != state {
+		http.NotFound(w, r)
+		log.Fatalf("State mismatch: %s != %s\n", st, state)
+	}
 
+	client := spotify.New(auth.Client(r.Context(), tok))
+	fmt.Fprintf(w, "Login Completed!")
+	ch <- client
+}
