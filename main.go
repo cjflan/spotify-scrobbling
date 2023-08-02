@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"os"
 
-	spotifyauth "github.com/cjflan/spotify-scrobbling/auth"
-	"github.com/cjflan/spotify-scrobbling/spotify"
+	"github.com/cjflan/spotify-scrobbling/controllers"
 )
 
 var (
-	auth  = spotifyauth.New(spotifyauth.WithScopes(spotifyauth.ScopeUserReadCurrentlyPlaying))
-	ch    = make(chan *spotify.Client)
-	state = RandomString(16)
+	auth  = controllers.GetAuth()
+	state = controllers.GetState()
+	ch    = controllers.GetCh()
 )
 
 func main() {
@@ -27,8 +26,7 @@ func main() {
 		log.Fatal("SPOTIFY_SECRET not set as enviornment variable")
 	}
 
-	fmt.Println("Hello World")
-	http.HandleFunc("/callback", callback)
+	http.HandleFunc("/callback", controllers.Callback)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
 	})
@@ -55,22 +53,4 @@ func main() {
 	} else {
 		fmt.Println("No song playing")
 	}
-}
-
-func callback(w http.ResponseWriter, r *http.Request) {
-	fmt.Println()
-	tok, err := auth.Token(r.Context(), state, r)
-	if err != nil {
-		http.Error(w, "Couldn't get token", http.StatusForbidden)
-		log.Fatal(err)
-	}
-	if st := r.FormValue("state"); st != state {
-		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, state)
-	}
-
-	client := spotify.New(auth.Client(r.Context(), tok))
-	fmt.Fprintf(w, "Login Completed!")
-	ch <- client
-
 }

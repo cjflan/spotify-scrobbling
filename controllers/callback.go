@@ -5,17 +5,15 @@ import (
 	"log"
 	"net/http"
 
-	spotifyauth "github.com/cjflan/spotify-scrobbling/auth"
 	"github.com/cjflan/spotify-scrobbling/spotify"
 )
 
-var (
-	auth  = spotifyauth.New(spotifyauth.WithScopes(spotifyauth.ScopeUserReadPrivate))
-	ch    = make(chan *spotify.Client)
-	state = "abc123"
-)
-
 func Callback(w http.ResponseWriter, r *http.Request) {
+	fmt.Println()
+	auth := GetAuth()
+	state := GetState()
+	ch := GetCh()
+
 	tok, err := auth.Token(r.Context(), state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
@@ -29,5 +27,4 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 	client := spotify.New(auth.Client(r.Context(), tok))
 	fmt.Fprintf(w, "Login Completed!")
 	ch <- client
-
 }
