@@ -12,7 +12,7 @@ type CurrentlyPlaying struct {
 }
 
 func (c *Client) GetCurrentlyPlaying(ctx context.Context) (*CurrentlyPlaying, error) {
-	requestURL := fmt.Sprintf("%s/me/player/currectly-playing", c.baseURL)
+	requestURL := fmt.Sprintf("%s/me/player/currently-playing", c.baseURL)
 
 	var result CurrentlyPlaying
 
