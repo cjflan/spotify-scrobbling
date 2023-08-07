@@ -40,8 +40,24 @@ func (db_info DB) Connect() rolandDB {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
+	err = roland.Ping()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	create_db := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db_info.DB_name)
 	_, err = db.Exec(create_db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS scrobbling (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        time INT,
+        title VARCHAR(255),
+        artist VARCHAR(255),
+		album VARCHAR(255)
+		)`)
 	if err != nil {
 		log.Fatal(err)
 	}
