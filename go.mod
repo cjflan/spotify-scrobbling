@@ -2,7 +2,10 @@ module github.com/cjflan/spotify-scrobbling
 
 go 1.20
 
-require golang.org/x/oauth2 v0.10.0
+require (
+	github.com/go-sql-driver/mysql v1.7.1
+	golang.org/x/oauth2 v0.10.0
+)
 
 require (
 	github.com/golang/protobuf v1.5.3 // indirect
