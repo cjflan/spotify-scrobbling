@@ -4,35 +4,32 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type DB struct {
-	username string
-	password string
-	address  string
-	port     string
-	db_name  string
+	Username string
+	Password string
+	Address  string
+	Port     string
+	DB_name  string
+}
+
+type rolandDB struct {
+	db *sql.DB
 }
 
 func getDSN(db DB) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", db.username, db.password, db.address, db.port, db.db_name)
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", db.Username, db.Password, db.Address, db.Port, db.DB_name)
 
 }
-func Connect() *sql.DB {
-
-	db_info := DB{
-		username: os.Getenv("MYSQL_USER"),
-		password: os.Getenv("MYSQL_PASSWORD"),
-		address:  "127.0.0.1",
-		port:     "3306",
-		db_name:  os.Getenv("MYSQL_DATABASE"),
-	}
+func (db_info DB) Connect() rolandDB {
 
 	db, err := sql.Open("mysql", getDSN(db_info))
+
+	roland := rolandDB{db: db}
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -43,7 +40,7 @@ func Connect() *sql.DB {
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	create_db := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db_info.db_name)
+	create_db := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db_info.DB_name)
 	_, err = db.Exec(create_db)
 	if err != nil {
 		log.Fatal(err)
@@ -51,5 +48,13 @@ func Connect() *sql.DB {
 
 	fmt.Println("Connected to MySQL and database initialized!")
 
-	return db
+	return roland
+}
+
+func (r rolandDB) Close() error {
+	return r.db.Close()
+}
+
+func (r rolandDB) Ping() error {
+	return r.db.Ping()
 }

@@ -1,4 +1,4 @@
-package spotify
+package scrobbling
 
 import (
 	"bytes"
@@ -29,17 +29,17 @@ func (e Error) Error() string {
 	return e.Message
 }
 
-type ClientOption func(client *Client)
+type ClientOption func(c *Client)
 
 func WithRetry(shouldRetry bool) ClientOption {
-	return func(client *Client) {
-		client.autoRetry = shouldRetry
+	return func(c *Client) {
+		c.autoRetry = shouldRetry
 	}
 }
 
 func WithBaseURL(url string) ClientOption {
-	return func(client *Client) {
-		client.baseURL = url
+	return func(c *Client) {
+		c.baseURL = url
 	}
 }
 

@@ -1,4 +1,4 @@
-package spotifyauth
+package auth
 
 import (
 	"context"

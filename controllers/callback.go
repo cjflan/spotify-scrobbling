@@ -5,26 +5,30 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/cjflan/spotify-scrobbling/spotify"
+	"github.com/cjflan/spotify-scrobbling/auth"
+	"github.com/cjflan/spotify-scrobbling/scrobbling"
+	"github.com/cjflan/spotify-scrobbling/utils"
+)
+
+var (
+	Auth  = auth.New(auth.WithScopes(auth.ScopeUserReadCurrentlyPlaying))
+	Ch    = make(chan *scrobbling.Client)
+	State = utils.RandomString(16)
 )
 
 func Callback(w http.ResponseWriter, r *http.Request) {
-	fmt.Println()
-	auth := GetAuth()
-	state := GetState()
-	ch := GetCh()
 
-	tok, err := auth.Token(r.Context(), state, r)
+	tok, err := Auth.Token(r.Context(), State, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
 	}
-	if st := r.FormValue("state"); st != state {
+	if st := r.FormValue("state"); st != State {
 		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, state)
+		log.Fatalf("State mismatch: %s != %s\n", st, State)
 	}
 
-	client := spotify.New(auth.Client(r.Context(), tok))
+	client := scrobbling.New(Auth.Client(r.Context(), tok))
 	fmt.Fprintf(w, "Login Completed!")
-	ch <- client
+	Ch <- client
 }

@@ -12,12 +12,6 @@ import (
 	database "github.com/cjflan/spotify-scrobbling/db"
 )
 
-var (
-	auth  = controllers.GetAuth()
-	state = controllers.GetState()
-	ch    = controllers.GetCh()
-)
-
 func main() {
 
 	if os.Getenv("SPOTIFY_ID") == "" {
@@ -50,7 +44,15 @@ func main() {
 		}
 	}()
 
-	db := database.Connect()
+	db_info := database.DB{
+		Username: os.Getenv("MYSQL_USER"),
+		Password: os.Getenv("MYSQL_PASSWORD"),
+		Address:  "127.0.0.1",
+		Port:     "3306",
+		DB_name:  os.Getenv("MYSQL_DATABASE"),
+	}
+
+	db := db_info.Connect()
 
 	defer db.Close()
 
@@ -59,11 +61,12 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	url := auth.AuthURL(state)
+	url := controllers.Auth.AuthURL(controllers.State)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 
-	client := <-ch
+	client := <-controllers.Ch
 	for {
+
 		currentlyPlaying, err := client.GetCurrentlyPlaying(context.Background())
 		song := currentlyPlaying.Item.Name
 		artist := currentlyPlaying.Item.Artists[0].Name
