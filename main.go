@@ -56,11 +56,6 @@ func main() {
 
 	defer db.Close()
 
-	err := db.Ping()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	url := controllers.Auth.AuthURL(controllers.State)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 
