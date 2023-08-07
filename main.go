@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/cjflan/spotify-scrobbling/controllers"
+	database "github.com/cjflan/spotify-scrobbling/db"
 )
 
 var (
@@ -26,6 +28,16 @@ func main() {
 		log.Fatal("SPOTIFY_SECRET not set as enviornment variable")
 	}
 
+	if os.Getenv("MYSQL_USER") == "" {
+		log.Fatal("MYSQL_USER not set as enviornment variable")
+	}
+	if os.Getenv("MYSQL_PASSWORD") == "" {
+		log.Fatal("MYSQL_PASSWORD not set as enviornment variable")
+	}
+	if os.Getenv("MYSQL_DATABASE") == "" {
+		log.Fatal("MYSQL_DATABASE not set as enviornment variable")
+	}
+
 	http.HandleFunc("/callback", controllers.Callback)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
@@ -38,19 +50,32 @@ func main() {
 		}
 	}()
 
+	db := database.Connect()
+
+	defer db.Close()
+
+	err := db.Ping()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	url := auth.AuthURL(state)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 
 	client := <-ch
+	for {
+		currentlyPlaying, err := client.GetCurrentlyPlaying(context.Background())
+		song := currentlyPlaying.Item.Name
+		artist := currentlyPlaying.Item.Artists[0].Name
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	currentlyPlaying, err := client.GetCurrentlyPlaying(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if currentlyPlaying.IsPlaying {
-		fmt.Println("You are currently playing:", currentlyPlaying.Item.Name)
-	} else {
-		fmt.Println("No song playing")
+		if currentlyPlaying.IsPlaying {
+			fmt.Printf("You are currently playing: %s - %s", song, artist)
+		} else {
+			fmt.Println("No song playing")
+		}
+		time.Sleep(5 * time.Second)
 	}
 }
