@@ -7,7 +7,7 @@ import (
 	"github.com/cjflan/spotify-scrobbling/scrobbling"
 )
 
-func (r rolandDB) NewListen(s scrobbling.CurrentlyPlaying) {
+func (r rolandDB) NewListen(s *scrobbling.CurrentlyPlaying) {
 
 	song := s.Item.Name
 	artist := s.Item.Artists[0].Name

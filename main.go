@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/cjflan/spotify-scrobbling/controllers"
 	database "github.com/cjflan/spotify-scrobbling/db"
@@ -60,20 +58,9 @@ func main() {
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 
 	client := <-controllers.Ch
+	
 	for {
-
-		currentlyPlaying, err := client.GetCurrentlyPlaying(context.Background())
-		song := currentlyPlaying.Item.Name
-		artist := currentlyPlaying.Item.Artists[0].Name
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if currentlyPlaying.IsPlaying {
-			fmt.Printf("You are currently playing: %s - %s", song, artist)
-		} else {
-			fmt.Println("No song playing")
-		}
-		time.Sleep(5 * time.Second)
+		song := client.Listen()
+		db.NewListen(song)
 	}
 }
