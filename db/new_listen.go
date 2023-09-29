@@ -1,19 +1,26 @@
 package database
 
 import (
-	"fmt"
+	"database/sql"
 	"time"
 
 	"github.com/cjflan/spotify-scrobbling/scrobbling"
 )
 
-func (r rolandDB) NewListen(s *scrobbling.CurrentlyPlaying) {
+type newListen struct {
+	title string
+	artist string
+	album string 
+	time int64
+}
 
-	song := s.Item.Name
-	artist := s.Item.Artists[0].Name
-	album := s.Item.Album.Name
-	time := time.Now().Unix()
+func (r *rolandDB) NewListen(s *scrobbling.CurrentlyPlaying) (sql.Result, error) {
 
-	insert := fmt.Sprintf("INSERT INTO scrobbles (time, song, artist, album) VALUES (%d, '%s', '%s', '%s');", time, song, artist, album)
-	r.db.Exec(insert)
+	nl := newListen{
+		title: s.Item.Name,
+		artist: s.Item.Artists[0].Name,
+		album: s.Item.Album.Name,
+		time: time.Now().Unix(),
+	}
+	return r.db.Exec("INSERT INTO scrobbles (time, title, artist, album) VALUES (?, ?, ?, ?)", nl.time, nl.title, nl.artist, nl.album)
 }

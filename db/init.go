@@ -21,26 +21,18 @@ type rolandDB struct {
 	db *sql.DB
 }
 
+func getDSNSQL(db DB) string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/", db.Username, db.Password, db.Address, db.Port)
+}
+
 func getDSN(db DB) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", db.Username, db.Password, db.Address, db.Port, db.DB_name)
-
 }
-func (db_info DB) Connect() rolandDB {
 
-	db, err := sql.Open("mysql", getDSN(db_info))
+func initDB(db_info DB) *rolandDB {
+	db, err := sql.Open("mysql", getDSNSQL(db_info))
 
-	roland := rolandDB{db: db}
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	// See "Important settings" section.
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
-	err = roland.Ping()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -51,7 +43,20 @@ func (db_info DB) Connect() rolandDB {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS scrobbling (
+	db, err = sql.Open("mysql", getDSN(db_info))
+
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+	
+	roland := &rolandDB{db: db}
+
+	err = roland.Ping()
+	if err != nil {
+		log.Fatal("Ping failed:", err.Error())
+	}
+
+	_, err = roland.db.Exec(`CREATE TABLE IF NOT EXISTS scrobbles (
         id INT AUTO_INCREMENT PRIMARY KEY,
         time INT,
         title VARCHAR(255),
@@ -63,14 +68,17 @@ func (db_info DB) Connect() rolandDB {
 	}
 
 	fmt.Println("Connected to MySQL and database initialized!")
-
-	return roland
+	 return roland
 }
 
-func (r rolandDB) Close() error {
+func (db_info *DB) Connect() *rolandDB {
+	return initDB(*db_info)
+}
+
+func (r *rolandDB) Close() error {
 	return r.db.Close()
 }
 
-func (r rolandDB) Ping() error {
+func (r *rolandDB) Ping() error {
 	return r.db.Ping()
 }

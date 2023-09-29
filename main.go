@@ -42,7 +42,7 @@ func main() {
 		}
 	}()
 
-	db_info := database.DB{
+	db_info := &database.DB{
 		Username: os.Getenv("MYSQL_USER"),
 		Password: os.Getenv("MYSQL_PASSWORD"),
 		Address:  "127.0.0.1",
@@ -58,9 +58,13 @@ func main() {
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 
 	client := <-controllers.Ch
-	
+
 	for {
 		song := client.Listen()
-		db.NewListen(song)
+		fmt.Printf("Listened to %s - %s\n", song.Item.Name, song.Item.Artists[0].Name)
+		_, err := db.NewListen(song)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
